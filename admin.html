@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Campus Mobility Admin</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+:root{
+    --primary:#4A4A1F;
+    --primary-dark:#3A3A16;
+    --accent:#4A4A1F;
+    --success:#14833b;
+    --danger:#b42318;
+    --warning:#b54708;
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --text:#2f3014;
+    --muted:#667085;
+    --border:#e5e7eb;
+    --header-font:#fffde7;
+}
+
+*{box-sizing:border-box;}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    height:100%;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overflow:hidden;
+}
+
+.loginPage{
+    width:100%;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:var(--bg);
+    padding:20px;
+}
+
+.loginCard{
+    width:min(92%,380px);
+    background:white;
+    border-radius:12px;
+    padding:24px;
+    box-shadow:0 4px 18px rgba(0,0,0,.15);
+    border-top:8px solid var(--primary);
+}
+
+.loginCard h2{
+    margin:0 0 8px;
+    color:var(--primary);
+    text-align:center;
+}
+
+.loginCard p{
+    margin:0 0 18px;
+    color:var(--muted);
+    text-align:center;
+    font-size:13px;
+}
+
+.loginStatus{
+    margin-top:12px;
+    color:var(--danger);
+    font-weight:700;
+    font-size:13px;
+    text-align:center;
+    min-height:18px;
+}
+
+.adminDashboard{
+    display:none;
+    width:100%;
+    height:100%;
+}
+
+.header{
+    height:62px;
+    background:var(--primary);
+    color:var(--header-font);
+    padding:10px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.header h2{
+    margin:0;
+    font-size:20px;
+    color:var(--header-font);
+}
+
+.header small{
+    color:#f2f0d0;
+    opacity:1;
+    font-size:12px;
+}
+
+.headerRight{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+#lastUpdated{
+    color:var(--header-font);
+    font-weight:700;
+    font-size:13px;
+}
+
+.logoutBtn{
+    background:#fffde7;
+    color:var(--primary);
+    padding:8px 12px;
+    font-size:13px;
+}
+
+.layout{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:12px;
+    padding:12px;
+    height:calc(100vh - 62px);
+    overflow:hidden;
+}
+
+.leftPanel{
+    height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding-right:6px;
+}
+
+.mapCard{
+    height:100%;
+    overflow:hidden;
+}
+
+.card{
+    background:var(--card);
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    border:1px solid var(--border);
+}
+
+.card h3{
+    margin:0 0 12px;
+    font-size:17px;
+    color:var(--primary);
+}
+
+label{
+    display:block;
+    margin-top:10px;
+    font-weight:700;
+    font-size:13px;
+    color:var(--primary);
+}
+
+input,select{
+    width:100%;
+    margin-top:6px;
+    padding:9px 10px;
+    border:1px solid #ccd0d5;
+    border-radius:7px;
+    font-size:14px;
+}
+
+button{
+    border:none;
+    border-radius:7px;
+    padding:10px 12px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:700;
+}
+
+.primaryBtn{
+    width:100%;
+    margin-top:12px;
+    color:#fffde7;
+    background:var(--primary);
+}
+
+.dangerBtn{
+    color:#fff;
+    background:var(--danger);
+}
+
+.secondaryBtn{
+    background:#f5f3df;
+    color:var(--primary);
+    border:1px solid #d8d5b5;
+}
+
+.statusText{
+    margin-top:10px;
+    font-weight:700;
+    min-height:18px;
+    font-size:14px;
+}
+
+.ok{color:var(--success);}
+.bad{color:var(--danger);}
+.warn{color:var(--warning);}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:10px;
+}
+
+.stat{
+    background:#f8fafc;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px;
+}
+
+.stat strong{
+    display:block;
+    font-size:22px;
+    margin-top:4px;
+    color:var(--primary);
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:12px;
+}
+
+#map{
+    width:100%;
+    height:100%;
+    min-height:0;
+    border-radius:8px;
+}
+
+.tableWrap{
+    margin-top:12px;
+    overflow:auto;
+    max-height:360px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+th,td{
+    border-bottom:1px solid var(--border);
+    padding:8px 6px;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    background:#f8fafc;
+    position:sticky;
+    top:0;
+    z-index:1;
+    color:var(--primary);
+}
+
+.badge{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+}
+
+.badge.green{background:#dcfce7;color:#166534;}
+.badge.blue{background:#dbeafe;color:#1d4ed8;}
+.badge.red{background:#fee2e2;color:#991b1b;}
+
+.smallActions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+}
+
+.smallActions button{
+    padding:6px 8px;
+    font-size:12px;
+}
+
+.notice{
+    background:#f5f3df;
+    border-left:4px solid var(--primary);
+    color:var(--text);
+    padding:10px;
+    border-radius:7px;
+    margin-top:12px;
+    font-size:13px;
+    line-height:1.4;
+}
+
+@media(max-width:900px){
+    html,body{
+        height:auto;
+        overflow:auto;
+    }
+
+    .header{
+        height:auto;
+    }
+
+    .layout{
+        grid-template-columns:1fr;
+        height:auto;
+        overflow:visible;
+    }
+
+    .leftPanel{
+        height:auto;
+        overflow:visible;
+        padding-right:0;
+    }
+
+    .mapCard{
+        height:520px;
+    }
+
+    #map{
+        height:520px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="loginPage" id="loginPage">
+    <div class="loginCard">
+        <h2>Admin Login</h2>
+        <p>Enter admin credentials to access the mobility dashboard.</p>
+
+        <label>Admin ID</label>
+        <input type="text" id="adminIdInput" placeholder="Enter Admin ID" />
+
+        <label>Password</label>
+        <input type="password" id="adminPasswordInput" placeholder="Enter Password" />
+
+        <button class="primaryBtn" onclick="loginAdmin()">Login</button>
+
+        <div id="adminLoginStatus" class="loginStatus"></div>
+    </div>
+</div>
+
+<div class="adminDashboard" id="adminDashboard">
+
+<div class="header">
+    <div>
+        <h2>SRMAP Intra Mobility Admin Dashboard</h2>
+        <small>Powered by Centre for Geospatial Technology</small>
+    </div>
+
+    <div class="headerRight">
+        <div id="lastUpdated">Last updated: --</div>
+        <button class="logoutBtn" onclick="logoutAdmin()">Logout</button>
+    </div>
+</div>
+
+<div class="layout">
+
+    <div class="leftPanel">
+        <div class="card">
+            <h3>Booking Control</h3>
+
+            <label>Booking Status</label>
+            <select id="bookingEnabled">
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+            </select>
+
+            <label>Start Time</label>
+            <input type="time" id="startTime" />
+
+            <label>End Time</label>
+            <input type="time" id="endTime" />
+
+            <button class="primaryBtn" onclick="saveServiceWindow()">Save Settings</button>
+
+            <div id="serviceStatus" class="statusText"></div>
+
+            <div class="notice">
+                Faculty and staff can request buggies only when booking is enabled and the current time falls within this window.
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+            <h3>Live Summary</h3>
+            <div class="stats">
+                <div class="stat"><span>Active Buggies</span><strong id="activeBuggyCount">0</strong></div>
+                <div class="stat"><span>Total Requests</span><strong id="totalRequestCount">0</strong></div>
+                <div class="stat"><span>Unclaimed Points</span><strong id="unclaimedCount">0</strong></div>
+                <div class="stat"><span>Claimed Points</span><strong id="claimedCount">0</strong></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+            <h3>Active Requests</h3>
+            <div class="smallActions" style="margin-bottom:8px;">
+                <button class="secondaryBtn" onclick="refreshRequestsOnce()">Refresh</button>
+                <button class="dangerBtn" onclick="clearAllRequests()">Clear All Requests</button>
+            </div>
+
+            <div class="tableWrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Count</th>
+                            <th>Status</th>
+                            <th>Readiness</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestTable">
+                        <tr><td colspan="5">No active requests</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mapCard">
+        <div id="map"></div>
+    </div>
+
+</div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDOJRkBNomOOQYB3GiTHZQ61k_Z_yavpso",
+    authDomain: "srmapintramobility.firebaseapp.com",
+    databaseURL: "https://srmapintramobility-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "srmapintramobility",
+    storageBucket: "srmapintramobility.firebasestorage.app",
+    messagingSenderId: "27384147111",
+    appId: "1:27384147111:web:26d6ddad4d6b5c14093f82"
+};
+
+if(!firebase.apps.length){
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+
+const driversRef = db.ref("drivers");
+const requestsRef = db.ref("requests");
+const serviceWindowRef = db.ref("settings/serviceWindow");
+
+const OFFLINE_LIMIT = 40000;
+const WARNING_LIMIT = 30000;
+
+const DEFAULT_CENTER = [16.46269468849855, 80.50694241534177];
+const DEFAULT_ZOOM = 17;
+
+let map = null;
+let dashboardStarted = false;
+const markers = {};
+
+async function sha256(message){
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+let audioCtx = null;
+let beepTimer = null;
+let alarmActive = false;
+
+function unlockAudio(){
+    try{
+        if(!audioCtx){
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if(audioCtx.state === "suspended"){
+            audioCtx.resume();
+        }
+    }catch(e){
+        console.error("Audio unlock failed:", e);
+    }
+}
+
+function playBeep(){
+    if(!audioCtx){
+        return;
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "square";
+    osc.frequency.value = 880;
+    gain.gain.value = 0.25;
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.25);
+}
+
+function startAlarm(){
+    if(alarmActive){
+        return;
+    }
+
+    alarmActive = true;
+    unlockAudio();
+    playBeep();
+
+    beepTimer = setInterval(playBeep, 900);
+}
+
+function stopAlarm(){
+    alarmActive = false;
+
+    if(beepTimer){
+        clearInterval(beepTimer);
+        beepTimer = null;
+    }
+}
+
+function firstTouchUnlock(){
+    unlockAudio();
+
+    document.removeEventListener("pointerdown", firstTouchUnlock);
+    document.removeEventListener("touchstart", firstTouchUnlock);
+    document.removeEventListener("click", firstTouchUnlock);
+}
+
+document.addEventListener("pointerdown", firstTouchUnlock);
+document.addEventListener("touchstart", firstTouchUnlock);
+document.addEventListener("click", firstTouchUnlock);
+
+window.onload = function(){
+    firebase.auth().onAuthStateChanged(function(user){
+        if(user){
+            const email = user.email || "";
+            const adminId = email.split("@")[0];
+
+            localStorage.setItem("adminId", adminId);
+            localStorage.setItem("adminAuthenticated", "true");
+            localStorage.setItem("adminLoginTime", Date.now());
+
+            showDashboard();
+        }
+    });
+};
+
+async function loginAdmin(){
+    unlockAudio();
+
+    const adminId = document.getElementById("adminIdInput").value.trim();
+    const passwordInput = document.getElementById("adminPasswordInput").value.trim();
+    const status = document.getElementById("adminLoginStatus");
+
+    if(!adminId || !passwordInput){
+        status.innerText = "Enter Admin ID and Password.";
+        return;
+    }
+
+    const email = adminId + "@mobility.local";
+
+    status.innerText = "Checking credentials...";
+
+    try{
+        await firebase.auth().signInWithEmailAndPassword(email, passwordInput);
+
+        localStorage.setItem("adminId", adminId);
+        localStorage.setItem("adminAuthenticated", "true");
+        localStorage.setItem("adminLoginTime", Date.now());
+
+        showDashboard();
+
+    }catch(error){
+        try{
+            await firebase.auth().signInWithEmailAndPassword(email, "SRM@" + passwordInput);
+
+            localStorage.setItem("adminId", adminId);
+            localStorage.setItem("adminAuthenticated", "true");
+            localStorage.setItem("adminLoginTime", Date.now());
+
+            showDashboard();
+
+        }catch(secondError){
+            console.error(secondError);
+            status.innerText = "Invalid admin credentials.";
+        }
+    }
+}
+
+function logoutAdmin(){
+    firebase.auth().signOut().then(function(){
+        localStorage.removeItem("adminId");
+        localStorage.removeItem("adminAuthenticated");
+        localStorage.removeItem("adminLoginTime");
+        window.location.reload();
+    }).catch(function(error){
+        console.error("Logout error:", error);
+        localStorage.removeItem("adminId");
+        localStorage.removeItem("adminAuthenticated");
+        localStorage.removeItem("adminLoginTime");
+        window.location.reload();
+    });
+}
+
+function showDashboard(){
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("adminDashboard").style.display = "block";
+
+    if(!dashboardStarted){
+        dashboardStarted = true;
+        initializeDashboard();
+    }
+
+    setTimeout(function(){
+        if(map){
+            map.invalidateSize();
+            map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        }
+    },300);
+}
+
+function initializeMap(){
+    map = L.map("map", {
+        preferCanvas:true,
+        zoomControl:true
+    }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+        maxZoom:19,
+        attribution:"&copy; OpenStreetMap contributors"
+    }).addTo(map);
+}
+
+const greenIcon = L.icon({
+    iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+    iconSize:[38,38],
+    iconAnchor:[19,19],
+    popupAnchor:[0,-15]
+});
+
+const redIcon = L.icon({
+    iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744467.png",
+    iconSize:[38,38],
+    iconAnchor:[19,19],
+    popupAnchor:[0,-15]
+});
+
+function minutesFromTime(value){
+    if(!value || !value.includes(":")) return null;
+    const parts = value.split(":").map(Number);
+    return parts[0] * 60 + parts[1];
+}
+
+function isNowWithinWindow(start,end){
+    const startMinutes = minutesFromTime(start);
+    const endMinutes = minutesFromTime(end);
+
+    if(startMinutes === null || endMinutes === null) return true;
+
+    const now = new Date();
+    const current = now.getHours() * 60 + now.getMinutes();
+
+    if(startMinutes <= endMinutes){
+        return current >= startMinutes && current <= endMinutes;
+    }
+
+    return current >= startMinutes || current <= endMinutes;
+}
+
+function updateServiceStatus(data){
+    const status = document.getElementById("serviceStatus");
+
+    const enabled = data && data.bookingEnabled !== false;
+    const start = data && data.start ? data.start : "";
+    const end = data && data.end ? data.end : "";
+
+    if(!enabled){
+        status.className = "statusText bad";
+        status.innerText = "Booking is currently disabled.";
+        return;
+    }
+
+    if(isNowWithinWindow(start,end)){
+        status.className = "statusText ok";
+        status.innerText = "Booking is open now.";
+    }else{
+        status.className = "statusText warn";
+        status.innerText = "Booking is outside the allowed time window.";
+    }
+}
+
+function loadServiceWindow(){
+    serviceWindowRef.on("value",function(snapshot){
+        const data = snapshot.val() || {};
+
+        document.getElementById("bookingEnabled").value =
+            data.bookingEnabled === false ? "false" : "true";
+
+        document.getElementById("startTime").value = data.start || "11:30";
+        document.getElementById("endTime").value = data.end || "16:00";
+
+        updateServiceStatus(data);
+    });
+}
+
+function saveServiceWindow(){
+    const enabled = document.getElementById("bookingEnabled").value === "true";
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+
+    if(!start || !end){
+        alert("Please select both start and end time.");
+        return;
+    }
+
+    serviceWindowRef.set({
+        enabled: enabled,
+        bookingEnabled: enabled,
+        start: start,
+        end: end,
+        updatedAt: Date.now()
+    }).then(function(){
+        document.getElementById("serviceStatus").className = "statusText ok";
+        document.getElementById("serviceStatus").innerText = "Settings saved successfully.";
+    }).catch(function(error){
+        document.getElementById("serviceStatus").className = "statusText bad";
+        document.getElementById("serviceStatus").innerText = "Error: " + error.message;
+    });
+}
+
+function listenDrivers(){
+    driversRef.on("value",function(snapshot){
+        let activeCount = 0;
+
+        Object.keys(markers).forEach(function(id){
+            if(!snapshot.hasChild(id)){
+                map.removeLayer(markers[id]);
+                delete markers[id];
+            }
+        });
+
+        snapshot.forEach(function(child){
+            const id = child.key.toLowerCase();
+            const data = child.val() || {};
+            const lat = data.lat;
+            const lng = data.lng;
+            const lastTime = data.time || 0;
+
+            if(!lat || !lng || !lastTime) return;
+
+            const age = Date.now() - lastTime;
+
+            if(age > OFFLINE_LIMIT){
+                driversRef.child(child.key).remove();
+
+                if(markers[id]){
+                    map.removeLayer(markers[id]);
+                    delete markers[id];
+                }
+
+                return;
+            }
+
+            activeCount++;
+
+            const icon = age > WARNING_LIMIT ? redIcon : greenIcon;
+            const status = age > WARNING_LIMIT ? "Delayed update" : "Active";
+
+            const popup =
+                "<b>" + id.toUpperCase() + "</b><br>" +
+                "Status: " + status + "<br>" +
+                "Last update: " + new Date(lastTime).toLocaleTimeString("en-IN",{
+                    hour:"numeric",
+                    minute:"numeric",
+                    second:"numeric",
+                    hour12:true
+                });
+
+            if(markers[id]){
+                markers[id].setLatLng([lat,lng]);
+                markers[id].setIcon(icon);
+                markers[id].bindPopup(popup);
+            }else{
+                markers[id] = L.marker([lat,lng],{icon:icon})
+                    .addTo(map)
+                    .bindPopup(popup);
+            }
+        });
+
+        document.getElementById("activeBuggyCount").innerText = activeCount;
+
+        document.getElementById("lastUpdated").innerText =
+            "Last updated: " +
+            new Date().toLocaleTimeString("en-IN",{
+                hour:"numeric",
+                minute:"numeric",
+                second:"numeric",
+                hour12:true
+            });
+    });
+}
+
+function listenRequests(){
+    requestsRef.on("value",function(snapshot){
+        renderRequests(snapshot);
+    });
+}
+
+function refreshRequestsOnce(){
+    requestsRef.once("value").then(renderRequests);
+}
+
+function renderRequests(snapshot){
+    const tbody = document.getElementById("requestTable");
+    tbody.innerHTML = "";
+
+    let totalRequests = 0;
+    let claimedPoints = 0;
+    let unclaimedPoints = 0;
+    let hasRows = false;
+
+    snapshot.forEach(function(child){
+        const block = child.key;
+        const data = child.val() || {};
+        const count = data.count || 0;
+        const assignedTo = data.assignedTo || null;
+        const locationVerified = data.locationVerified === true || data.readyConfirmed === true;
+        const lastFacultyId = data.lastFacultyId || data.facultyId || "";
+        const distanceM = data.locationValidation && typeof data.locationValidation.distanceM === "number"
+            ? Math.round(data.locationValidation.distanceM)
+            : null;
+
+        if(count <= 0) return;
+
+        hasRows = true;
+        totalRequests += count;
+
+        if(assignedTo){
+            claimedPoints++;
+        }else{
+            unclaimedPoints++;
+        }
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML =
+            "<td>" + block.replaceAll("_"," ") + "</td>" +
+            "<td><strong>" + count + "</strong></td>" +
+            "<td>" +
+                (assignedTo
+                    ? "<span class='badge blue'>Claimed by " + assignedTo.toUpperCase() + "</span>"
+                    : "<span class='badge green'>Unclaimed</span>") +
+            "</td>" +
+            "<td>" +
+                (locationVerified
+                    ? "<span class='badge green'>Location verified" + (distanceM !== null ? " · " + distanceM + " m" : "") + (lastFacultyId ? " · " + lastFacultyId : "") + "</span>"
+                    : "<span class='badge red'>Location not verified</span>") +
+            "</td>" +
+            "<td><div class='smallActions'>" +
+                "<button class='secondaryBtn' onclick=\"unclaimRequest('" + block + "')\">Unclaim</button>" +
+                "<button class='dangerBtn' onclick=\"removeRequest('" + block + "')\">Clear</button>" +
+            "</div></td>";
+
+        tbody.appendChild(tr);
+    });
+
+    if(!hasRows){
+        tbody.innerHTML = "<tr><td colspan='5'>No active requests</td></tr>";
+    }
+
+    if(unclaimedPoints > 0){
+        startAlarm();
+    }else{
+        stopAlarm();
+    }
+
+    document.getElementById("totalRequestCount").innerText = totalRequests;
+    document.getElementById("claimedCount").innerText = claimedPoints;
+    document.getElementById("unclaimedCount").innerText = unclaimedPoints;
+}
+
+function unclaimRequest(block){
+    requestsRef.child(block).child("assignedTo").remove();
+}
+
+function removeRequest(block){
+    if(confirm("Clear this request location?")){
+        requestsRef.child(block).remove();
+    }
+}
+
+function clearAllRequests(){
+    if(confirm("Clear all active buggy requests?")){
+        requestsRef.remove();
+    }
+}
+
+function initializeDashboard(){
+    initializeMap();
+    loadServiceWindow();
+    listenDrivers();
+    listenRequests();
+
+    setInterval(function(){
+        serviceWindowRef.once("value").then(function(snapshot){
+            updateServiceStatus(snapshot.val() || {});
+        });
+    },30000);
+}
+</script>
+
+</body>
+</html>

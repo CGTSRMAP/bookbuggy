@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>SRMAP Buggy</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#1B5E20">
+
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Intra Mobility">
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="style.css?v=18"/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+<style>
+
+body{
+margin:0;
+padding:0;
+background:#f2f4f7;
+font-family:Arial, Helvetica, sans-serif;
+overflow-x:hidden;
+-webkit-tap-highlight-color:transparent;
+}
+
+#loginContainer{
+width:min(92%,420px);
+margin:25px auto;
+padding:22px;
+box-sizing:border-box;
+}
+
+#facultyIdInput,
+#facultyPinInput{
+width:100%;
+padding:12px;
+margin-top:10px;
+margin-bottom:10px;
+font-size:16px;
+border-radius:8px;
+border:1px solid #ccc;
+box-sizing:border-box;
+text-align:center;
+}
+
+#facultyPinInput{
+letter-spacing:4px;
+}
+
+#facultyLoginBtn{
+width:100%;
+}
+
+.userContainer{
+width:min(95%,900px);
+margin:auto;
+padding:15px;
+box-sizing:border-box;
+background:white;
+border-radius:12px;
+box-shadow:0 4px 12px rgba(0,0,0,0.15);
+margin-top:20px;
+margin-bottom:30px;
+}
+
+.miniMapBox{
+width:100%;
+border-radius:12px;
+overflow:hidden;
+margin-bottom:20px;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+#map{
+width:100%;
+height:clamp(280px,50vh,420px);
+z-index:1;
+}
+
+.requestBox{
+position:relative;
+z-index:10;
+text-align:center;
+}
+
+#facultyDisplay{
+font-size:14px;
+font-weight:bold;
+margin-bottom:15px;
+color:#1B5E20;
+}
+
+.logoutBtn{
+padding:10px 14px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+background:#E0E0E0;
+font-weight:bold;
+}
+
+.logoutBtn:hover{
+background:#CCCCCC;
+}
+
+#loginStatus{
+font-size:14px;
+font-weight:bold;
+margin-top:10px;
+color:#C62828;
+}
+
+.stopDisciplineNotice{
+background:#E8F5E9;
+color:#1B5E20;
+padding:12px;
+border-radius:8px;
+font-size:14px;
+font-weight:bold;
+margin-bottom:12px;
+line-height:1.5;
+}
+
+.confirmOverlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.55);
+z-index:3000;
+align-items:center;
+justify-content:center;
+padding:16px;
+box-sizing:border-box;
+}
+
+.confirmCard{
+background:white;
+width:min(92%,420px);
+border-radius:14px;
+padding:20px;
+box-shadow:0 8px 24px rgba(0,0,0,0.3);
+text-align:left;
+}
+
+.confirmCard h3{
+margin:0 0 10px;
+color:#1B5E20;
+}
+
+.confirmCard p{
+font-size:14px;
+line-height:1.5;
+color:#333;
+}
+
+.confirmCheck{
+display:flex;
+gap:10px;
+align-items:flex-start;
+font-size:14px;
+font-weight:bold;
+color:#1B5E20;
+margin:14px 0;
+}
+
+.confirmCheck input{
+width:auto;
+margin:3px 0 0;
+transform:scale(1.2);
+}
+
+.confirmActions{
+display:flex;
+gap:10px;
+justify-content:flex-end;
+flex-wrap:wrap;
+}
+
+.confirmActions button{
+padding:10px 14px;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.cancelConfirmBtn{
+background:#E0E0E0;
+color:#333;
+}
+
+.sendConfirmBtn{
+background:#1B5E20;
+color:white;
+}
+
+.sendConfirmBtn:disabled{
+opacity:0.5;
+cursor:not-allowed;
+}
+
+.serviceNotice{
+background:#FFF3E0;
+color:#E65100;
+padding:12px;
+border-radius:8px;
+font-size:14px;
+font-weight:bold;
+margin-bottom:18px;
+}
+
+.cgtFooter{
+margin-top:20px;
+font-size:13px;
+font-weight:bold;
+color:#666;
+text-align:center;
+line-height:1.6;
+}
+
+.requestGrid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+gap:10px;
+margin-top:15px;
+}
+
+.reqBtn{
+padding:12px;
+font-size:14px;
+background:#1B5E20;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+transition:0.2s;
+font-weight:bold;
+}
+
+.reqBtn:hover{
+background:#145A1A;
+transform:translateY(-1px);
+}
+
+.legend{
+position:fixed;
+bottom:15px;
+left:15px;
+background:rgba(255,255,255,0.95);
+padding:8px 12px;
+border-radius:10px;
+font-size:12px;
+box-shadow:0 3px 8px rgba(0,0,0,0.25);
+z-index:1000;
+display:flex;
+align-items:center;
+gap:12px;
+backdrop-filter:blur(6px);
+}
+
+.legend img{
+vertical-align:middle;
+margin-right:4px;
+}
+
+.header{
+height:auto;
+background:#1B5E20;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:10px 15px;
+box-shadow:0 2px 4px rgba(0,0,0,0.2);
+flex-wrap:wrap;
+gap:5px;
+}
+
+.title-left{
+color:white;
+font-size:16px;
+font-weight:bold;
+}
+
+.update-time{
+color:white;
+font-size:12px;
+}
+
+@media (max-width:700px){
+
+.header{
+justify-content:center;
+text-align:center;
+}
+
+.title-left,
+.update-time{
+width:100%;
+}
+
+.title-left{
+font-size:15px;
+}
+
+.update-time{
+font-size:11px;
+}
+
+.userContainer{
+width:94%;
+padding:12px;
+}
+
+#map{
+height:320px;
+}
+
+.reqBtn{
+font-size:14px;
+padding:12px;
+}
+
+.legend{
+left:50%;
+transform:translateX(-50%);
+bottom:10px;
+font-size:11px;
+padding:6px 10px;
+}
+
+}
+
+@media (max-width:480px){
+
+.requestGrid{
+grid-template-columns:1fr;
+}
+
+#map{
+height:280px;
+}
+
+.reqBtn{
+font-size:15px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<div class="title-left">
+SRM University AP Intra Mobility Dashboard
+</div>
+
+<div id="activeBuggies" class="update-time">
+Active Buggies: 0
+</div>
+
+<div id="lastUpdate" class="update-time">
+Last updated: --
+</div>
+
+</div>
+
+<div id="loginContainer" class="requestBox">
+
+<h3 style="text-align:center;">
+Employee Authentication
+</h3>
+
+<div class="serviceNotice" id="serviceNotice">
+Loading buggy service timings...
+</div>
+
+<input type="text" id="facultyIdInput" placeholder="Enter Employee ID"/>
+
+<input type="password" id="facultyPinInput" maxlength="4" placeholder="Enter 4 Digit PIN"/>
+
+<button onclick="loginFaculty()" class="reqBtn" id="facultyLoginBtn">
+Login
+</button>
+
+<p id="loginStatus"></p>
+
+<p class="cgtFooter">
+Developed by<br>
+Centre for Geospatial Technology
+</p>
+
+</div>
+
+<div class="userContainer" id="mainDashboard" style="display:none;">
+
+<div class="miniMapBox">
+<div id="map"></div>
+</div>
+
+<div class="requestBox">
+
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+
+<h3 style="margin:0;">
+Where are you waiting for the buggy?
+</h3>
+
+<button onclick="logoutFaculty()" class="logoutBtn">
+Logout
+</button>
+
+</div>
+
+<p id="facultyDisplay"></p>
+
+<div class="serviceNotice" id="dashboardServiceNotice">
+Buggy service timings will be shown here.
+</div>
+
+<div class="stopDisciplineNotice">
+Allow location access to book a buggy.
+</div>
+
+<p id="locationGateStatus" style="font-size:13px;font-weight:bold;color:#1B5E20;margin-top:6px;"></p>
+
+<div class="requestGrid">
+
+<button class="reqBtn" onclick="sendRequest('ADMIN')">
+Admin
+</button>
+
+<button class="reqBtn" onclick="sendRequest('X_LAB')">
+X Lab
+</button>
+
+<button class="reqBtn" onclick="sendRequest('SR_BLOCK_ENTRANCE')">
+SR Block Entrance
+</button>
+
+<button class="reqBtn" onclick="sendRequest('STUDENT_COUNCIL')">
+Student Council
+</button>
+
+<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">
+CV Raman
+</button>
+
+<button class="reqBtn" onclick="sendRequest('GATE3')">
+Gate 3
+</button>
+
+<button class="reqBtn" onclick="sendRequest('GATE6')">
+Gate 6
+</button>
+
+</div>
+
+<p id="requestStatus"></p>
+
+<p id="cooldownTimer" style="font-size:13px;font-weight:bold;color:#E65100;margin-top:6px;"></p>
+
+</div>
+
+</div>
+
+<div class="legend">
+
+<div>
+<img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" width="20">
+Active
+</div>
+
+<div>
+<img src="https://cdn-icons-png.flaticon.com/512/744/744467.png" width="20">
+Inactive
+</div>
+
+</div>
+
+<script src="app.js?v=21"></script>
+
+<script>
+
+async function sha256(message){
+
+const msgBuffer =
+new TextEncoder().encode(message);
+
+const hashBuffer =
+await crypto.subtle.digest(
+'SHA-256',
+msgBuffer
+);
+
+const hashArray =
+Array.from(
+new Uint8Array(hashBuffer)
+);
+
+const hashHex =
+hashArray
+.map(b =>
+b.toString(16).padStart(2,'0')
+)
+.join('');
+
+return hashHex;
+
+}
+
+
+
+function formatTime12Hour(timeValue){
+
+if(!timeValue){
+return "--";
+}
+
+const parts =
+timeValue.split(":");
+
+let hours =
+parseInt(parts[0],10);
+
+const minutes =
+parts[1];
+
+const ampm =
+hours >= 12 ? "PM" : "AM";
+
+hours =
+hours % 12;
+
+if(hours === 0){
+hours = 12;
+}
+
+return hours + ":" + minutes + " " + ampm;
+
+}
+
+async function getServiceWindow(){
+
+try{
+
+if(!firebase || !firebase.database){
+return null;
+}
+
+const serviceWindowPromise =
+firebase.database()
+.ref("settings/serviceWindow")
+.once("value");
+
+const timeoutPromise =
+new Promise(function(resolve){
+setTimeout(function(){ resolve(null); }, 10000);
+});
+
+const snapshot =
+await Promise.race([serviceWindowPromise, timeoutPromise]);
+
+if(!snapshot || !snapshot.exists || !snapshot.exists()){
+return null;
+}
+
+return snapshot.val();
+
+}
+catch(error){
+
+console.error(
+"Service window fetch failed:",
+error
+);
+
+return null;
+
+}
+
+}
+
+async function updateServiceNotice(){
+
+const data =
+await getServiceWindow();
+
+const loginNotice =
+document.getElementById("serviceNotice");
+
+const dashboardNotice =
+document.getElementById("dashboardServiceNotice");
+
+let message =
+"Unable to load buggy service timings. Please refresh the page.";
+
+if(data && data.start && data.end){
+
+const availableNow = await isServiceAvailableFromData(data);
+message =
+(availableNow ? "Buggy service is available now. " : "Buggy services are not available now. ") +
+"Service hours: " +
+formatTime12Hour(data.start) +
+" to " +
+formatTime12Hour(data.end) +
+".";
+
+}
+
+if(data && data.bookingEnabled === false){
+
+message =
+"Buggy booking is currently disabled by the administrator.";
+
+}
+
+if(loginNotice){
+loginNotice.innerText = message;
+}
+
+if(dashboardNotice){
+dashboardNotice.innerText = message;
+}
+
+}
+
+function isServiceAvailableFromData(data){
+
+if(!data){
+return true;
+}
+
+if(data.enabled === false || data.bookingEnabled === false){
+return false;
+}
+
+if(!data.start || !data.end){
+return true;
+}
+
+const now = new Date();
+const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+const startParts = data.start.split(":").map(Number);
+const endParts = data.end.split(":").map(Number);
+const startMinutes = (startParts[0] * 60) + startParts[1];
+const endMinutes = (endParts[0] * 60) + endParts[1];
+
+if(startMinutes <= endMinutes){
+return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+}
+
+return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+
+}
+
+async function isServiceAvailable(){
+
+try{
+const data = await getServiceWindow();
+return isServiceAvailableFromData(data);
+}
+catch(error){
+console.error("Service availability check failed:",error);
+return true;
+}
+
+}
+
+function setLoginEnabled(enabled){
+
+const loginBtn =
+document.getElementById("facultyLoginBtn");
+
+if(!loginBtn){
+return;
+}
+
+loginBtn.disabled = !enabled;
+loginBtn.style.opacity = enabled ? 1 : 0.5;
+loginBtn.style.cursor = enabled ? "pointer" : "not-allowed";
+
+}
+
+function getServiceUnavailableMessage(){
+
+const notice = document.getElementById("serviceNotice");
+const timingText = notice && notice.innerText ? notice.innerText : "Buggy services are not available now. Please try during service hours.";
+
+return timingText;
+
+}
+
+function disableLogin(){
+
+setLoginEnabled(false);
+
+const loginStatus = document.getElementById("loginStatus");
+if(loginStatus){
+loginStatus.innerText = "";
+}
+
+}
+
+function enableLogin(){
+
+setLoginEnabled(true);
+
+const loginStatus =
+document.getElementById("loginStatus");
+
+if(loginStatus &&
+(loginStatus.innerText.indexOf("Buggy services are not available now") === 0 ||
+ loginStatus.innerText === "Buggy service is currently unavailable.")){
+
+loginStatus.innerText = "";
+
+}
+
+}
+
+async function refreshLoginAvailability(){
+
+await updateServiceNotice();
+
+const available = await isServiceAvailable();
+
+if(available){
+enableLogin();
+}
+else{
+disableLogin();
+}
+
+return available;
+
+}
+
+
+window.onload = function(){
+
+/* Show admin-defined timing before login and block faculty login outside service hours. */
+refreshLoginAvailability();
+if(firebase && firebase.database){
+firebase.database().ref("settings/serviceWindow").on("value",function(snapshot){
+var data = snapshot && snapshot.exists && snapshot.exists() ? snapshot.val() : null;
+var loginNotice = document.getElementById("serviceNotice");
+var dashboardNotice = document.getElementById("dashboardServiceNotice");
+var msg = "Unable to load buggy service timings. Please refresh the page.";
+if(data && data.start && data.end){
+var availableNow = isServiceAvailableFromData(data);
+msg = (availableNow ? "Buggy service is available now. " : "Buggy services are not available now. ") +
+"Service hours: " + formatTime12Hour(data.start) + " to " + formatTime12Hour(data.end) + ".";
+}
+if(data && data.bookingEnabled === false){
+msg = "Buggy booking is currently disabled by the administrator.";
+}
+if(loginNotice){ loginNotice.innerText = msg; }
+if(dashboardNotice){ dashboardNotice.innerText = msg; }
+refreshLoginAvailability();
+});
+}
+
+firebase.auth().onAuthStateChanged(async function(user){
+
+if(user){
+
+const available = await refreshLoginAvailability();
+
+if(!available){
+
+firebase.auth().signOut();
+localStorage.clear();
+return;
+
+}
+
+const email = user.email || "";
+const facultyId = email.split("@")[0];
+
+currentFacultyId =
+facultyId;
+
+isAuthenticated =
+true;
+
+localStorage.setItem(
+"facultyId",
+facultyId
+);
+
+localStorage.setItem(
+"facultyAuthenticated",
+"true"
+);
+
+showDashboard(facultyId);
+
+}
+
+});
+
+};
+
+async function loginFaculty(){
+
+const serviceAvailable = await refreshLoginAvailability();
+
+if(!serviceAvailable){
+
+const status = document.getElementById("loginStatus");
+if(status){
+status.innerText = "";
+}
+
+return;
+
+}
+
+const facultyId =
+document.getElementById("facultyIdInput")
+.value
+.trim();
+
+const pin =
+document.getElementById("facultyPinInput")
+.value
+.trim();
+
+if(!facultyId || !pin){
+
+document.getElementById("loginStatus")
+.innerText =
+"Enter Employee ID and PIN";
+
+return;
+
+}
+
+const email = facultyId + "@mobility.local";
+const password = "SRM@" + pin;
+
+document.getElementById("loginStatus")
+.innerText =
+"Checking credentials...";
+
+firebase.auth()
+.signInWithEmailAndPassword(email,password)
+.then(function(){
+
+localStorage.setItem(
+"facultyId",
+facultyId
+);
+
+localStorage.setItem(
+"facultyAuthenticated",
+"true"
+);
+
+currentFacultyId =
+facultyId;
+
+isAuthenticated =
+true;
+
+showDashboard(facultyId);
+
+})
+.catch(function(error){
+
+console.error(error);
+
+document.getElementById("loginStatus")
+.innerText =
+"Invalid Employee ID or PIN";
+
+});
+
+}
+
+function showDashboard(facultyId){
+
+document.getElementById("loginContainer")
+.style.display = "none";
+
+document.getElementById("mainDashboard")
+.style.display = "block";
+
+document.getElementById("facultyDisplay")
+.innerText =
+"Logged in as Employee ID: " +
+facultyId;
+
+updateServiceNotice();
+
+refreshCooldownUI();
+
+startFacultyStopRangeWatch();
+
+if(facultyLoginSessionTimer){ clearTimeout(facultyLoginSessionTimer); }
+facultyLoginSessionTimer = setTimeout(function(){
+const status = document.getElementById("requestStatus");
+if(status){ status.innerText = "Faculty session expired after 10 minutes. Please login again."; }
+logoutFaculty();
+},FACULTY_SESSION_TIMEOUT_MS);
+
+setTimeout(function(){
+
+initializeMap();
+
+setTimeout(function(){
+
+if(map){
+
+map.invalidateSize(true);
+
+updateMap();
+
+}
+
+},1000);
+
+},300);
+
+}
+
+function logoutFaculty(){
+
+if(facultyLoginSessionTimer){ clearTimeout(facultyLoginSessionTimer); facultyLoginSessionTimer = null; }
+if(activeRequestWatchId !== null && navigator.geolocation){ navigator.geolocation.clearWatch(activeRequestWatchId); activeRequestWatchId = null; }
+activeRequestBlock = null;
+stopFacultyStopRangeWatch();
+
+firebase.auth().signOut().then(function(){
+
+localStorage.clear();
+
+window.location.reload();
+
+}).catch(function(error){
+
+console.error("Logout error:",error);
+
+localStorage.clear();
+
+window.location.reload();
+
+});
+
+}
+
+
+const REQUEST_COOLDOWN_MS = 600000;
+const FACULTY_SESSION_TIMEOUT_MS = 600000;
+
+let cooldownInterval = null;
+let facultyLoginSessionTimer = null;
+let activeRequestBlock = null;
+let activeRequestWatchId = null;
+
+const STOP_ALLOWED_RADIUS_M = 40;
+const STOP_CANCEL_RADIUS_M = 50;
+const MAX_ACCEPTABLE_LOCATION_ACCURACY_M = 60;
+
+const STOP_LOCATIONS = {
+ADMIN:{lat:16.4645,lng:80.5080},
+X_LAB:{lat:16.4636,lng:80.5071},
+SR_BLOCK_ENTRANCE:{lat:16.4631,lng:80.5067},
+STUDENT_COUNCIL:{lat:16.4625,lng:80.5069},
+CV_RAMAN:{lat:16.4620,lng:80.5063},
+GATE3:{lat:16.4601,lng:80.5070},
+GATE6:{lat:16.4598,lng:80.5049}
+};
+
+function getCurrentPositionPromise(){
+
+return new Promise(function(resolve,reject){
+
+if(!navigator.geolocation){
+reject(new Error("Geolocation is not supported on this device/browser."));
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+function(position){ resolve(position); },
+function(error){ reject(error); },
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
+}
+);
+
+});
+
+}
+
+function distanceBetweenMetres(lat1,lng1,lat2,lng2){
+const R = 6371000;
+const p1 = lat1 * Math.PI / 180;
+const p2 = lat2 * Math.PI / 180;
+const dp = (lat2 - lat1) * Math.PI / 180;
+const dl = (lng2 - lng1) * Math.PI / 180;
+const a = Math.sin(dp/2) * Math.sin(dp/2) +
+Math.cos(p1) * Math.cos(p2) *
+Math.sin(dl/2) * Math.sin(dl/2);
+return R * 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function validateFacultyNearStop(block,coords,limitM){
+
+const stop = STOP_LOCATIONS[block];
+const allowedLimit = limitM || STOP_ALLOWED_RADIUS_M;
+
+if(!stop){
+return { ok:false, message:"Selected stop location is not configured." };
+}
+
+const distanceM = distanceBetweenMetres(coords.latitude,coords.longitude,stop.lat,stop.lng);
+const accuracy = coords.accuracy || 9999;
+
+if(accuracy > MAX_ACCEPTABLE_LOCATION_ACCURACY_M){
+return {
+ok:false,
+distanceM:distanceM,
+accuracy:accuracy,
+message:"GPS accuracy is low. Move to an open area near the stop."
+};
+}
+
+if(distanceM <= allowedLimit){
+return {
+ok:true,
+distanceM:distanceM,
+accuracy:accuracy
+};
+}
+
+return {
+ok:false,
+distanceM:distanceM,
+accuracy:accuracy,
+message:"Please come closer to a buggy stop to place the request."
+};
+
+}
+
+function validateFacultyNearAnyStop(coords,limitM){
+
+const allowedLimit = limitM || STOP_ALLOWED_RADIUS_M;
+let nearest = null;
+
+Object.keys(STOP_LOCATIONS).forEach(function(key){
+const stop = STOP_LOCATIONS[key];
+const d = distanceBetweenMetres(coords.latitude,coords.longitude,stop.lat,stop.lng);
+if(!nearest || d < nearest.distanceM){
+nearest = { block:key, distanceM:d, lat:stop.lat, lng:stop.lng };
+}
+});
+
+const accuracy = coords.accuracy || 9999;
+
+if(accuracy > MAX_ACCEPTABLE_LOCATION_ACCURACY_M){
+return { ok:false, nearestBlock:nearest ? nearest.block : null, distanceM:nearest ? nearest.distanceM : null, accuracy:accuracy, message:"Your location accuracy is low. Please move to an open area near a buggy stop and try again." };
+}
+
+if(nearest && nearest.distanceM <= allowedLimit){
+return { ok:true, nearestBlock:nearest.block, distanceM:nearest.distanceM, accuracy:accuracy };
+}
+
+return { ok:false, nearestBlock:nearest ? nearest.block : null, distanceM:nearest ? nearest.distanceM : null, accuracy:accuracy, message:"Please come closer to a buggy stop to place the request." };
+
+}
+
+function setRequestButtonsEnabled(enabled){
+const btns = document.querySelectorAll(".requestGrid .reqBtn");
+btns.forEach(function(b){
+b.disabled = !enabled;
+b.style.opacity = enabled ? 1 : 0.5;
+b.style.cursor = enabled ? "pointer" : "not-allowed";
+});
+}
+
+let facultyRangeWatchId = null;
+let facultyInsideAnyStop = false;
+
+function startFacultyStopRangeWatch(){
+
+if(!navigator.geolocation){
+setRequestButtonsEnabled(false);
+const status = document.getElementById("locationGateStatus");
+if(status){ status.innerText = "Location access is required to enable buggy requests."; }
+return;
+}
+
+if(facultyRangeWatchId !== null){
+navigator.geolocation.clearWatch(facultyRangeWatchId);
+}
+
+setRequestButtonsEnabled(false);
+const status = document.getElementById("locationGateStatus");
+if(status){ status.innerText = "Allow location access when prompted."; }
+
+facultyRangeWatchId = navigator.geolocation.watchPosition(
+function(position){
+const validation = validateFacultyNearAnyStop(position.coords,STOP_ALLOWED_RADIUS_M);
+facultyInsideAnyStop = validation.ok;
+setRequestButtonsEnabled(validation.ok);
+const s = document.getElementById("locationGateStatus");
+if(s){
+if(validation.ok){
+s.innerText = "Location verified. You can request a buggy.";
+}
+else{
+s.innerText = validation.message;
+}
+}
+},
+function(error){
+facultyInsideAnyStop = false;
+setRequestButtonsEnabled(false);
+const s = document.getElementById("locationGateStatus");
+if(s){ s.innerText = "Location permission is needed to book a buggy."; }
+console.warn("Faculty range check failed:",error);
+},
+{ enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+);
+
+}
+
+function stopFacultyStopRangeWatch(){
+if(facultyRangeWatchId !== null && navigator.geolocation){
+navigator.geolocation.clearWatch(facultyRangeWatchId);
+facultyRangeWatchId = null;
+}
+facultyInsideAnyStop = false;
+}
+
+function cancelActiveFacultyRequest(reason){
+
+if(!activeRequestBlock || !currentFacultyId){ return; }
+
+const block = activeRequestBlock;
+activeRequestBlock = null;
+
+if(activeRequestWatchId !== null && navigator.geolocation){
+navigator.geolocation.clearWatch(activeRequestWatchId);
+activeRequestWatchId = null;
+}
+
+requestsRef.child(block).transaction(function(data){
+if(!data){ return data; }
+const newCount = Math.max((data.count || 1) - 1,0);
+if(newCount <= 0){ return null; }
+data.count = newCount;
+data.time = Date.now();
+data.locationVerified = true;
+data.locationCancelledBy = currentFacultyId;
+data.locationCancelledAt = Date.now();
+data.locationCancelReason = reason || "faculty_moved_away_from_stop";
+return data;
+});
+
+const status = document.getElementById("requestStatus");
+if(status){
+status.innerText = "Your buggy request was cancelled because you moved away from the stop area.";
+}
+
+}
+
+function startActiveRequestLocationWatch(block){
+
+if(!navigator.geolocation){ return; }
+
+if(activeRequestWatchId !== null){
+navigator.geolocation.clearWatch(activeRequestWatchId);
+activeRequestWatchId = null;
+}
+
+activeRequestBlock = block;
+
+activeRequestWatchId = navigator.geolocation.watchPosition(
+function(position){
+const validation = validateFacultyNearAnyStop(position.coords,STOP_CANCEL_RADIUS_M);
+if(!validation.ok && validation.distanceM > STOP_CANCEL_RADIUS_M){
+cancelActiveFacultyRequest("faculty_moved_" + Math.round(validation.distanceM) + "m_from_stop");
+}
+},
+function(error){
+console.warn("Live faculty location check failed:",error);
+},
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
+}
+);
+
+}
+
+function getCooldownRemaining(){
+
+if(!currentFacultyId){
+return 0;
+}
+
+const last =
+localStorage.getItem(
+"lastBuggyRequest_" + currentFacultyId
+);
+
+if(!last){
+return 0;
+}
+
+const remaining =
+REQUEST_COOLDOWN_MS -
+(Date.now() - parseInt(last));
+
+return remaining > 0 ? remaining : 0;
+
+}
+
+function refreshCooldownUI(){
+
+const remaining = getCooldownRemaining();
+
+const btns =
+document.querySelectorAll(".requestGrid .reqBtn");
+
+const timer =
+document.getElementById("cooldownTimer");
+
+if(remaining > 0){
+
+btns.forEach(function(b){
+b.disabled = true;
+b.style.opacity = 0.5;
+b.style.cursor = "not-allowed";
+});
+
+const secs = Math.ceil(remaining / 1000);
+const m = Math.floor(secs / 60);
+const s = secs % 60;
+
+if(timer){
+timer.innerText =
+"You can request again in " +
+m + "m " + (s < 10 ? "0" : "") + s + "s";
+}
+
+if(!cooldownInterval){
+cooldownInterval =
+setInterval(refreshCooldownUI, 1000);
+}
+
+}
+else{
+
+btns.forEach(function(b){
+const enabledByLocation = !!facultyInsideAnyStop;
+b.disabled = !enabledByLocation;
+b.style.opacity = enabledByLocation ? 1 : 0.5;
+b.style.cursor = enabledByLocation ? "pointer" : "not-allowed";
+});
+
+if(timer){
+timer.innerText = "";
+}
+
+if(cooldownInterval){
+clearInterval(cooldownInterval);
+cooldownInterval = null;
+}
+
+}
+
+}
+
+async function sendRequest(block){
+
+if(!isAuthenticated){
+
+document.getElementById("requestStatus")
+.innerText =
+"Employee authentication required.";
+
+return;
+
+}
+
+await updateServiceNotice();
+
+const available =
+await isServiceAvailable();
+
+if(!available){
+
+document.getElementById("requestStatus")
+.innerText =
+"Buggy service is currently unavailable as per the displayed timings. Please try during service hours.";
+
+return;
+
+}
+
+if(getCooldownRemaining() > 0){
+
+refreshCooldownUI();
+
+return;
+
+}
+
+const status = document.getElementById("requestStatus");
+
+if(status){
+status.innerText = "Allow location access when prompted.";
+}
+
+try{
+
+const position = await getCurrentPositionPromise();
+const validation = validateFacultyNearAnyStop(position.coords,STOP_ALLOWED_RADIUS_M);
+
+if(!validation.ok){
+if(status){ status.innerText = validation.message; }
+setRequestButtonsEnabled(false);
+return;
+}
+
+requestBuggy(block,{
+lat:position.coords.latitude,
+lng:position.coords.longitude,
+accuracy:position.coords.accuracy,
+validatedAt:Date.now(),
+validationType:"within_any_stop_radius",
+nearestStop:validation.nearestBlock,
+allowedRadiusM:STOP_ALLOWED_RADIUS_M,
+cancelRadiusM:STOP_CANCEL_RADIUS_M,
+distanceM:validation.distanceM
+});
+
+startActiveRequestLocationWatch(block);
+
+localStorage.setItem(
+"lastBuggyRequest_" + currentFacultyId,
+Date.now()
+);
+
+refreshCooldownUI();
+
+if(status){
+status.innerText =
+"Request sent from " +
+block.replaceAll("_"," ") +
+". Location verified. Please wait near the stop.";
+}
+
+}
+catch(error){
+console.error(error);
+if(status){
+status.innerText = "Location permission is needed to book a buggy.";
+}
+}
+
+}
+
+
+setInterval(async function(){
+
+const available = await refreshLoginAvailability();
+
+if(!available && isAuthenticated){
+
+const status = document.getElementById("requestStatus");
+if(status){
+status.innerText = "Buggy services are not available now. You have been logged out.";
+}
+
+logoutFaculty();
+
+}
+
+},60000);
+
+window.onpageshow =
+function(event){
+
+if(event.persisted){
+
+window.location.reload();
+
+}
+
+};
+
+if('serviceWorker' in navigator){
+
+navigator.serviceWorker
+.register('service-worker.js')
+.then(function(){
+
+console.log("PWA enabled");
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
