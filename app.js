@@ -587,57 +587,47 @@ requestsRef
 cleanRequests();
 
 
-requestsRef.on("value",function(snapshot){
+let activeFacultyRequestListener = null;
 
-let claimedMessage = "";
+function watchFacultyRequestClaim(block){
 
+if(activeFacultyRequestListener){
+activeFacultyRequestListener.off();
+activeFacultyRequestListener = null;
+}
 
-snapshot.forEach(function(child){
+activeFacultyRequestListener =
+requestsRef.child(block);
 
-const data = child.val();
+activeFacultyRequestListener.on("value",function(snapshot){
+
+const data = snapshot.val();
 
 if(!data){
-
 return;
-
 }
-
 
 if(data.assignedTo){
-
-claimedMessage +=
-
-"🚗 " +
-
-child.key.replaceAll("_"," ") +
-
-" claimed by " +
-
-data.assignedTo.toUpperCase() +
-
-"<br>";
-
-}
-
-});
-
 
 const statusBox =
 document.getElementById("requestStatus");
 
-
 if(statusBox){
 
-if(claimedMessage !== ""){
-
 statusBox.innerHTML =
-claimedMessage;
+"🚗 Your trip from <b>" +
+block.replaceAll("_"," ") +
+"</b> has been claimed by <b>" +
+data.assignedTo.toUpperCase() +
+"</b>. Please wait at the stop.";
 
 }
 
 }
 
 });
+
+}
 
 
 function verifyFacultyAccess(){
@@ -785,6 +775,8 @@ document.getElementById("requestStatus")
 block.replaceAll("_"," ") +
 
 ". Location verified. Please stay at the stop until the buggy arrives.";
+
+watchFacultyRequestClaim(block);
 
 return true;
 
