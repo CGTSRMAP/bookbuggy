@@ -415,6 +415,24 @@ th{
         </div>
 
         <div class="card" style="margin-top:14px;">
+            <h3>Buggy Claim Summary</h3>
+            <div class="tableWrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Buggy</th>
+                            <th>Claims</th>
+                            <th>Passengers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="buggyClaimTable">
+                        <tr><td colspan="3">No claimed requests</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
             <h3>Active Requests</h3>
             <div class="smallActions" style="margin-bottom:8px;">
                 <button class="secondaryBtn" onclick="refreshRequestsOnce()">Refresh</button>
@@ -843,12 +861,17 @@ function refreshRequestsOnce(){
 
 function renderRequests(snapshot){
     const tbody = document.getElementById("requestTable");
+    const claimTbody = document.getElementById("buggyClaimTable");
+
     tbody.innerHTML = "";
+    claimTbody.innerHTML = "";
 
     let totalRequests = 0;
     let claimedPoints = 0;
     let unclaimedPoints = 0;
     let hasRows = false;
+
+    const buggyClaims = {};
 
     snapshot.forEach(function(child){
         const block = child.key;
@@ -868,6 +891,18 @@ function renderRequests(snapshot){
 
         if(assignedTo){
             claimedPoints++;
+
+            const buggyId = assignedTo.toLowerCase();
+
+            if(!buggyClaims[buggyId]){
+                buggyClaims[buggyId] = {
+                    claims:0,
+                    passengers:0
+                };
+            }
+
+            buggyClaims[buggyId].claims++;
+            buggyClaims[buggyId].passengers += count;
         }else{
             unclaimedPoints++;
         }
@@ -897,6 +932,23 @@ function renderRequests(snapshot){
 
     if(!hasRows){
         tbody.innerHTML = "<tr><td colspan='5'>No active requests</td></tr>";
+    }
+
+    const buggyIds = Object.keys(buggyClaims);
+
+    if(buggyIds.length === 0){
+        claimTbody.innerHTML = "<tr><td colspan='3'>No claimed requests</td></tr>";
+    }else{
+        buggyIds.sort().forEach(function(buggyId){
+            const tr = document.createElement("tr");
+
+            tr.innerHTML =
+                "<td><strong>" + buggyId.toUpperCase() + "</strong></td>" +
+                "<td>" + buggyClaims[buggyId].claims + "</td>" +
+                "<td>" + buggyClaims[buggyId].passengers + "</td>";
+
+            claimTbody.appendChild(tr);
+        });
     }
 
     if(unclaimedPoints > 0){
