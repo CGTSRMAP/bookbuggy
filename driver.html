@@ -1217,7 +1217,8 @@ firebase.database()
 .ref("requests/"+block)
 .update({
 
-assignedTo:currentBuggy
+assignedTo:currentBuggy,
+claimedAt:Date.now()
 
 });
 
