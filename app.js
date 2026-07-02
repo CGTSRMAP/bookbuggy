@@ -607,7 +607,11 @@ if(!data){
 return;
 }
 
-if(data.assignedTo){
+if(
+data.assignedTo &&
+data.lastFacultyId &&
+data.lastFacultyId === currentFacultyId
+){
 
 const statusBox =
 document.getElementById("requestStatus");
@@ -615,11 +619,9 @@ document.getElementById("requestStatus");
 if(statusBox){
 
 statusBox.innerHTML =
-"🚗 Your trip from <b>" +
-block.replaceAll("_"," ") +
-"</b> has been claimed by <b>" +
+"🚗 Your buggy <b>" +
 data.assignedTo.toUpperCase() +
-"</b>. Please wait at the stop.";
+"</b> is on the way.<br>Please remain at the buggy stop.";
 
 }
 
